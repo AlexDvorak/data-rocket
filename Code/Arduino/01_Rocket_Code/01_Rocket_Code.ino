@@ -5,6 +5,7 @@
 #include <Adafruit_Sensor.h>
 
 #define MODE_BUTTON 9
+#define LED 7
 
 typedef union
 {
@@ -20,24 +21,29 @@ uint16_t addr = 0;
 float_union_t f;
 
 void setup() {
-  pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(LED, OUTPUT);
   pinMode(MODE_BUTTON, INPUT_PULLUP);
 
   if(digitalRead(MODE_BUTTON) == HIGH) { // data recovery mode
-    Serial.begin(256000);
-    
-    uint8_t value;
-    for (uint16_t a = 0; a < 32768; a++) {
-      if(a % 64 == 0) {
-        Serial.println();
-      }
-      
-      value = fram.read8(a);
-      Serial.print(value, HEX);
-      Serial.print(" ");
-    }
+    Serial.begin(250000);
 
-    pulse(2000);
+    while(true) {
+      while(Serial.available() <= 0){
+        delay(10);
+      }
+      Serial.read();
+      
+      uint8_t value;
+      for (uint16_t a = 0x0; a < 32768; a++) {
+        if(a % 64 == 0) {
+          Serial.println();
+        }
+        
+        value = fram.read8(a);
+        Serial.print(value, HEX);
+        Serial.print(" ");
+      }
+    }
   } else { // data collection mode
     if(!(fram.begin() && accel.begin() && baro.begin())) {
       pulse(500);
@@ -47,9 +53,9 @@ void setup() {
     accel.setDataRate(MMA8451_DATARATE_100_HZ);
     
     for(int i = 0; i < 20; i++) {
-      digitalWrite(LED_BUILTIN, LOW);
+      digitalWrite(LED, LOW);
       delay(100);
-      digitalWrite(LED_BUILTIN, HIGH);
+      digitalWrite(LED, HIGH);
       delay(100);
     }
   }
@@ -95,9 +101,9 @@ void writeFloat(float x) {
 
 void pulse(int d) {
   while(true) {
-    digitalWrite(LED_BUILTIN, LOW);
+    digitalWrite(LED, LOW);
     delay(d);
-    digitalWrite(LED_BUILTIN, HIGH);
+    digitalWrite(LED, HIGH);
     delay(d);
   }
 }

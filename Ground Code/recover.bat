@@ -1,2 +1,0 @@
-python recover.py
-pause

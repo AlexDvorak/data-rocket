@@ -40,37 +40,52 @@ def select_port(available_ports: List[str]) -> str:
         return available_ports[selected_index - 1]
 
 def open_connection(serial_port: str) -> serial.Serial:
-    serial_connection = serial.Serial(serial_port)
+    serial_connection = serial.Serial(serial_port, baudrate=250000, timeout=2.0)
     print(f"\nconnected to {serial_port}\n")
     return serial_connection
 
 def close_connection(serial_connection: serial.Serial):
     serial_connection.close()
-    print("\nclosed connection")
+    print("\nclosed connection\n")
 
 def read_hex(serial_connection: serial.Serial) -> List[float]:
+    serial_connection.write('a'.encode('ascii'))
+    serial_connection.flush()
+    serial_connection.readline()
+
     numbers = []
     for i in range(512):
-        line = serial_connection.readline()
+        line = None
+        try:
+            line = serial_connection.readline().strip().decode('ascii')
+        except TimeoutError:
+            print("\ntimed out\n")
+            break
 
         i2 = str(i).rjust(3, "0")
         print(f"{i2}\t: {line}")
 
         hex_codes = line.split(' ')
-        for j in range(0, 64, 4):
+
+        for j in range(0, len(hex_codes) - 3, 4):
             num = struct.unpack('!f', bytes.fromhex("".join(hex_codes[j:j+4])))[0]
             numbers.append(num)
     return numbers
 
 def organize_data(numbers: List[float]) -> List[Union[List[str], List[float]]]:
+    print()
     data = [["time", "accel_x", "accel_y", "accel_z", "altitude", "temperature", "pressure"]]
     t = 0.0
-    for i in range(0, 32766, 6):
+    for i in range(0, len(numbers) - 5, 6):
         row = [t]
         t += 0.05
         for j in range(i, i + 6):
             row.append(numbers[j])
         data.append(row)
+
+        i2 = str(i // 6).rjust(3, "0")
+        row2 = " ".join(map(lambda x: str(x).rjust(20, " "), row))
+        print(f"{i2}\t: {row2}")
     return data
 
 def save_data(file_name: str, data: List[Union[List[str], List[float]]]):
@@ -83,7 +98,7 @@ def main():
     serial_port = select_port(available_ports)
     serial_connection = open_connection(serial_port)
 
-    numbers = read_hex()
+    numbers = read_hex(serial_connection)
     data = organize_data(numbers)
     save_data("../Data/Latest Data.csv", data)
     
