@@ -2,13 +2,15 @@
 
 - data collection is hard to trigger
     - requires button to be held for 3 seconds and released before 5 seconds
-    - countdown timer
+    - 60s countdown timer during where a button press will cancel
 - LEDs signal the current state:
     - default state (PWM oscillation T = 4)
     - recovering data (off)
-    - data collection button held (solid on)
+    - data collection button held (solid off, solid on)
     - data collection countdown (blinking speeds up)
     - collecting data (solid on)
+    - fail (blinking T = 4)
+    - halt (PWM oscillation T = 1)
 
 ## states
 
@@ -33,4 +35,4 @@
 
 ### collecting data
 
-- finished → default state
+- finished → halt

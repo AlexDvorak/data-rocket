@@ -1,6 +1,8 @@
 #include <Wire.h>
 #include <Adafruit_FRAM_I2C.h>
 
+#define N 32768
+
 Adafruit_FRAM_I2C fram = Adafruit_FRAM_I2C();
 
 void setup() {
@@ -15,21 +17,34 @@ void setup() {
       delay(1000);
     }
   }
-
-  while(Serial.available() <= 0) {
-    delay(10);
-  }
   
-  Serial.println("Starting!");
+  Serial.println("Clearing!");
 
-  addr = 0;
-  do {
-    x = fram.read8(addr);
-    Serial.print(x, HEX);
+  for(addr = 0; addr < N; addr++) {
+    fram.write8(addr, 0);
+  }
+
+  while(true) {
     Serial.println();
-    fram.write8(addr, x + 0x1);
-    addr++;
-  } while(x > 0x0 && addr < 0xFF);
+    Serial.println("Ready!");
+    Serial.println();
+  
+    while(Serial.available() <= 0) {
+      delay(10);
+    }
+    while(Serial.available() > 0) {
+      Serial.read();
+    }
+  
+    addr = 0;
+    do {
+      x = fram.read8(addr);
+      Serial.print(x);
+      Serial.println();
+      fram.write8(addr, x + 1);
+      addr++;
+    } while(x > 0 && addr < 255);
+  }
 }
 
 void loop() {

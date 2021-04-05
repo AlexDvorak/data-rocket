@@ -44,8 +44,6 @@ void loop() {
   writeFloat("pressure", pressure);
   Serial.println("Pa");
   Serial.println();
-
-  delay(50);
 }
 
 void writeFloat(char title[], float x) {

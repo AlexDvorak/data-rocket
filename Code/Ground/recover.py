@@ -66,6 +66,7 @@ def read_hex(serial_connection: serial.Serial) -> List[float]:
         print(f"{i2}\t: {line}")
 
         hex_codes = line.split(' ')
+        hex_codes = list(map(lambda x: x.rjust(2, "0"), hex_codes))
 
         for j in range(0, len(hex_codes) - 3, 4):
             num = struct.unpack('!f', bytes.fromhex("".join(hex_codes[j:j+4])))[0]
@@ -84,7 +85,7 @@ def organize_data(numbers: List[float]) -> List[Union[List[str], List[float]]]:
         data.append(row)
 
         i2 = str(i // 6).rjust(3, "0")
-        row2 = " ".join(map(lambda x: str(x).rjust(20, " "), row))
+        row2 = " ".join(map(lambda x: str(x).rjust(25, " "), row))
         print(f"{i2}\t: {row2}")
     return data
 
