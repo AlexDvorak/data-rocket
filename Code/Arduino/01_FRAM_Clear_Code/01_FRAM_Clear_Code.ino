@@ -16,13 +16,13 @@ void setup() {
     return;
   }
   
-  Serial.println("Clearing...");
+  Serial.println("clearing...");
 
   for(addr = 0; addr < N; addr++) {
     fram.write8(addr, 0);
   }
 
-  Serial.println("Cleared!");
+  Serial.println("cleared!");
 }
 
 void loop() {

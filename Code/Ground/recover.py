@@ -76,10 +76,10 @@ def read_hex(serial_connection: serial.Serial) -> List[float]:
 def organize_data(numbers: List[float]) -> List[Union[List[str], List[float]]]:
     print()
     data = [["time", "accel_x", "accel_y", "accel_z", "altitude", "temperature", "pressure"]]
-    t = 0.0
+    t = 0
     for i in range(0, len(numbers) - 5, 6):
         row = [t]
-        t += 0.05
+        t += 50
         for j in range(i, i + 6):
             row.append(numbers[j])
         data.append(row)

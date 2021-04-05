@@ -4,7 +4,7 @@
 #include <Adafruit_MMA8451.h>
 #include <Adafruit_MPL3115A2_Modified.h>
 
-#define DEBUG true
+#define DEBUG false
 
 #define BUTTON 8
 #define LED A9
@@ -153,16 +153,16 @@ void takeData() {
 //  }
   
   float temperature = baro.getTemperature(); // deg C
-  if(DEBUG) {
-    Serial.print("done getting temperature at: ");
-    Serial.println(millis() - start_time);
-  }
+//  if(DEBUG) {
+//    Serial.print("done getting temperature at: ");
+//    Serial.println(millis() - start_time);
+//  }
 
   float pressure = baro.getPressure(); // Pa
-  if(DEBUG) {
-    Serial.print("done getting pressure at: ");
-    Serial.println(millis() - start_time);
-  }
+//  if(DEBUG) {
+//    Serial.print("done getting pressure at: ");
+//    Serial.println(millis() - start_time);
+//  }
   
 //  float altitude = baro.getAltitude(); // m
   float altitude = 44330.0 * (1.0 - pow(pressure / PRESSURE_SEA_LEVEL, 0.1903));
@@ -183,15 +183,20 @@ void takeData() {
 //  }
 
   unsigned long elapsed_time = millis() - start_time;
-  if(elapsed_time < 50) {
-    unsigned long remaining_time = 50 - elapsed_time;
-    if(remaining_time > 0) {
-      delay(remaining_time);
-    }
-  }
   if(DEBUG) {
     Serial.print("finished data frame after: ");
     Serial.println(elapsed_time);
+  }
+  
+  if(elapsed_time < 50) {
+    unsigned long remaining_time = 50 - elapsed_time;
+    if(DEBUG) {
+      Serial.print("waiting: ");
+      Serial.println(remaining_time);
+    }
+    if(remaining_time > 0) {
+      delay(remaining_time);
+    }
   }
 }
 
@@ -209,6 +214,7 @@ void writeFloat(float x) {
     
     addr++;
     if(addr == MAX_ADDR) {
+      if(DEBUG) Serial.println("finished data collection!");
       while(true) {
         pulse(2);
       }
