@@ -4,10 +4,10 @@
 #include <Adafruit_MMA8451.h>
 #include <Adafruit_MPL3115A2_Modified.h>
 
-#define DEBUG false
+#define DEBUG true
 
 #define BUTTON 8
-#define LED A9
+#define LED 9
 
 #ifdef DEBUG
   #define COUNTDOWN_MINUTES 0
@@ -25,21 +25,32 @@ Adafruit_MPL3115A2 baro = Adafruit_MPL3115A2();
 uint16_t addr = 0;
 
 uint8_t brightness = 0;
-uint8_t brightness_inc = 1;
+bool brightness_inc = true;
 
 const uint8_t countdown_time = 50 * COUNTDOWN_MINUTES;
 
 void setup() {
+  delay(2000);
+  
   Serial.begin(250000);
   
   pinMode(LED, OUTPUT);
   pinMode(BUTTON, INPUT_PULLUP);
 
   if(!(fram.begin() && accel.begin() && baro.begin())) {
-    flash(2000);
+    delay(5000);
+    Serial.print("FRAM:\t");
+    Serial.println(fram.begin());
+    Serial.print("ACCEL:\t");
+    Serial.println(accel.begin());
+    Serial.print("BARO:\t");
+    Serial.println(baro.begin());
   }
+  
   accel.setRange(MMA8451_RANGE_2_G);
   accel.setDataRate(MMA8451_DATARATE_100_HZ);
+
+  if(DEBUG) Serial.println("good startup");
 }
 
 void loop() {
@@ -223,11 +234,20 @@ void writeFloat(float x) {
 }
 
 void pulse(uint8_t d) {
-  brightness += brightness_inc;
-  if(brightness == 255) {
-    brightness_inc = -1;
-  } else if(brightness == 0) {
-    brightness_inc = 1;
+  if(brightness_inc) {
+    brightness++;
+    if(brightness == 255) {
+      brightness_inc = false;
+    }
+  } else {
+    brightness--;
+    if(brightness == 0) {
+      brightness_inc = true;
+    }
+  }
+  if(DEBUG) {
+    Serial.print("brightness: ");
+    Serial.println(brightness);
   }
   setLEDAnalog(brightness);
   delay(d);
