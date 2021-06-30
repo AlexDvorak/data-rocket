@@ -158,7 +158,6 @@ void takeData() {
   float accel_x = event.acceleration.x; // ms^-2
   float accel_y = event.acceleration.y; // ms^-2
   float accel_z = event.acceleration.z; // ms^-2
-  float accel = sqrt((accel_x * accel_x) + (accel_y * accel_y) + (accel_z * accel_z));
 //  if(DEBUG) {
 //    Serial.print("done getting accel data at: ");
 //    Serial.println(millis() - start_time);
@@ -177,13 +176,16 @@ void takeData() {
 //  }
   
 //  float altitude = baro.getAltitude(); // m
-//  float altitude = 44330.0 * (1.0 - pow(pressure / PRESSURE_SEA_LEVEL, 0.1903));
+  float altitude = 44330.0 * (1.0 - pow(pressure / PRESSURE_SEA_LEVEL, 0.1903));
 //  if(DEBUG) {
 //    Serial.print("done getting altitude at: ");
 //    Serial.println(millis() - start_time);
 //  }
 
-  writeFloat(accel);
+  writeFloat(accel_x);
+  writeFloat(accel_y);
+  writeFloat(accel_z);
+  writeFloat(altitude);
   writeFloat(temperature);
   writeFloat(pressure);
 //  if(DEBUG) {

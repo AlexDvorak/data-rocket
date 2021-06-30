@@ -5,6 +5,9 @@ import serial
 import struct
 from csv import writer
 
+cols = ["accel", "temperature", "pressure"]
+# cols = ["accel_x", "accel_y", "accel_z", "altitude", "temperature", "pressure"]
+
 def check_available_ports() -> List[str]:
     if sys.platform.startswith('win'):
         ports = ['COM%s' % (i + 1) for i in range(256)]
@@ -75,16 +78,17 @@ def read_hex(serial_connection: serial.Serial) -> List[float]:
 
 def organize_data(numbers: List[float]) -> List[Union[List[str], List[float]]]:
     print()
-    data = [["time", "accel_x", "accel_y", "accel_z", "altitude", "temperature", "pressure"]]
+    data = [ ["time"] + cols ]
+    c = len(cols)
     t = 0
-    for i in range(0, len(numbers) - 5, 6):
+    for i in range(0, len(numbers) - c + 1, c):
         row = [t]
         t += 50
-        for j in range(i, i + 6):
+        for j in range(i, i + c):
             row.append(numbers[j])
         data.append(row)
 
-        i2 = str(i // 6).rjust(3, "0")
+        i2 = str(i // c).rjust(3, "0")
         row2 = " ".join(map(lambda x: str(x).rjust(25, " "), row))
         print(f"{i2}\t: {row2}")
     return data
