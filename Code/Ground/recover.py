@@ -51,29 +51,33 @@ def close_connection(serial_connection: serial.Serial):
     serial_connection.close()
     print("\nclosed connection\n")
 
-def read_hex(serial_connection: serial.Serial) -> List[float]:
+def read_hex(file_name: str, serial_connection: serial.Serial) -> List[float]:
     serial_connection.write('a'.encode('ascii'))
     serial_connection.flush()
     serial_connection.readline()
 
-    numbers = []
-    for i in range(512):
-        line = None
-        try:
-            line = serial_connection.readline().strip().decode('ascii')
-        except TimeoutError:
-            print("\ntimed out\n")
-            break
+    with open(file_name, "w+") as hex_file:
+        numbers = []
+        for i in range(512):
+            line = None
+            try:
+                line = serial_connection.readline().strip().decode('ascii')
+            except TimeoutError:
+                print("\ntimed out\n")
+                break
+            
+            hex_file.write(line + "\n")
 
-        i2 = str(i).rjust(3, "0")
-        print(f"{i2}\t: {line}")
+            i2 = str(i).rjust(3, "0")
+            print(f"{i2}\t: {line}")
 
-        hex_codes = line.split(' ')
-        hex_codes = list(map(lambda x: x.rjust(2, "0"), hex_codes))
+            hex_codes = line.split(' ')
+            hex_codes = list(map(lambda x: x.rjust(2, "0"), hex_codes))
 
-        for j in range(0, len(hex_codes) - 3, 4):
-            num = struct.unpack('!f', bytes.fromhex("".join(hex_codes[j:j+4])))[0]
-            numbers.append(num)
+            for j in range(0, len(hex_codes) - 3, 4):
+                num = struct.unpack('!f', bytes.fromhex("".join(hex_codes[j:j+4])))[0]
+                numbers.append(num)
+
     return numbers
 
 def organize_data(numbers: List[float]) -> List[Union[List[str], List[float]]]:
@@ -103,9 +107,9 @@ def main():
     serial_port = select_port(available_ports)
     serial_connection = open_connection(serial_port)
 
-    numbers = read_hex(serial_connection)
+    numbers = read_hex("../Data/Raw/Latest Data.txt", serial_connection)
     data = organize_data(numbers)
-    save_data("../Data/Latest Data.csv", data)
+    save_data("../Data/CSV/Latest Data.csv", data)
     
     close_connection(serial_connection)
 

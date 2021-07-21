@@ -4,12 +4,12 @@
 #include <Adafruit_MMA8451.h>
 #include <Adafruit_MPL3115A2_Modified.h>
 
-#define DEBUG true
+#define DEBUG false
 
 #define BUTTON 8
 #define LED 9
 
-#ifdef DEBUG
+#if DEBUG
   #define COUNTDOWN_MINUTES 0
 #else
   #define COUNTDOWN_MINUTES 2
@@ -243,10 +243,10 @@ void pulse(uint8_t d) {
       brightness_inc = true;
     }
   }
-  if(DEBUG) {
-    Serial.print("brightness: ");
-    Serial.println(brightness);
-  }
+//  if(DEBUG) {
+//    Serial.print("brightness: ");
+//    Serial.println(brightness);
+//  }
   setLEDAnalog(brightness);
   delay(d);
 }
