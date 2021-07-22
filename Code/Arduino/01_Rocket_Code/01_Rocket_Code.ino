@@ -54,7 +54,7 @@ void setup() {
 }
 
 void loop() {
-  pulse(8);
+  pulse(8); // T = 4
 
   if(Serial.available() > 0) {
     recoverData();
@@ -68,8 +68,10 @@ void recoverData() {
   while(Serial.available() > 0) {
     Serial.read();
   }
+
+  // no debug logging (messes up data recovery)
   
-  digitalWrite(LED, LOW); // prevent debug logging messing up data recovery
+  digitalWrite(LED, LOW);
   
   uint8_t value;
   for (uint16_t a = 0; a < MAX_ADDR; a++) {
@@ -148,7 +150,7 @@ void takeDataCountdown() {
   }
 }
 
-void takeData() {
+void takeData() { // LED stays on
   unsigned long start_time = millis();
 
 //  if(DEBUG) Serial.println("starting data frame");
@@ -225,7 +227,7 @@ void writeFloat(float x) {
     if(addr == MAX_ADDR) {
       if(DEBUG) Serial.println("finished data collection!");
       while(true) {
-        pulse(2);
+        pulse(2); // T = 1
       }
     }
   }
@@ -278,6 +280,6 @@ bool getButton() {
 
 void waitForButtonRelease() {
   while(getButton()) {
-    pulse(8);
+    pulse(8); // T = 4
   }
 }
