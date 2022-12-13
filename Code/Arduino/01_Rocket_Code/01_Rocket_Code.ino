@@ -4,23 +4,18 @@
 #include <Adafruit_MMA8451.h>
 #include <Adafruit_MPL3115A2.h>
 
-#define DEBUG false
+bool const DEBUG = false;
+int const COUNTDOWN_MINUTES = DEBUG ? 0 : 2;
 
-#define BUTTON 8
-#define LED 9
+int const BUTTON = 8;
+int const LED = 9;
 
-#if DEBUG
-  #define COUNTDOWN_MINUTES 0
-#else
-  #define COUNTDOWN_MINUTES 2
-#endif
- 
-#define MAX_ADDR 32768
-#define PRESSURE_SEA_LEVEL 101325.0
+int const MAX_ADDR = 32768;
+float const PRESSURE_SEA_LEVEL = 101325.0;
 
-Adafruit_FRAM_I2C fram = Adafruit_FRAM_I2C();
-Adafruit_MMA8451 accel = Adafruit_MMA8451();
-Adafruit_MPL3115A2 baro = Adafruit_MPL3115A2();
+Adafruit_FRAM_I2C const fram {};
+Adafruit_MMA8451 const accel {};
+Adafruit_MPL3115A2 const baro {};
 
 uint16_t addr = 0;
 
