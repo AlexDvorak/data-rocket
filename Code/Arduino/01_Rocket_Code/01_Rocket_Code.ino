@@ -31,9 +31,9 @@ const uint8_t countdown_time = 50 * COUNTDOWN_MINUTES;
 
 void setup() {
   delay(2000);
-  
+
   Serial.begin(250000);
-  
+
   pinMode(LED, OUTPUT);
   pinMode(BUTTON, INPUT_PULLUP);
 
@@ -46,7 +46,7 @@ void setup() {
     Serial.print("BARO:\t");
     Serial.println(baro.begin());
   }
-  
+
   accel.setRange(MMA8451_RANGE_8_G);
   accel.setDataRate(MMA8451_DATARATE_50_HZ);
 
@@ -70,16 +70,16 @@ void recoverData() {
   }
 
   // no debug logging (messes up data recovery)
-  
+
   digitalWrite(LED, LOW);
-  
+
   uint8_t value;
   for (uint16_t a = 0; a < MAX_ADDR; a++) {
     if(a % 64 == 0) {
       Serial.println();
     }
-    
-    value = fram.read8(a);
+
+    value = fram.read(a);
     Serial.print(value, HEX);
     Serial.print(" ");
   }
@@ -90,17 +90,17 @@ void recoverData() {
 void buttonHeld() {
   setLED(false);
   unsigned long start_time = millis();
-  
+
   while(millis() - start_time < 3000) {
     if(!getButton()) {
       if(DEBUG) Serial.println("button released too early");
       return;
     }
   }
-  
+
   setLED(true);
   bool begin_data = false;
-  
+
   while(millis() - start_time < 5000) {
     if(!getButton()) {
       begin_data = true;
@@ -124,7 +124,7 @@ void takeDataCountdown() {
     delay(500);
     setLED(true);
     delay(500);
-    
+
     if(getButton()) {
       waitForButtonRelease();
       return;
@@ -136,7 +136,7 @@ void takeDataCountdown() {
     delay(100);
     setLED(true);
     delay(100);
-    
+
     if(getButton()) {
       waitForButtonRelease();
       return;
@@ -154,8 +154,8 @@ void takeData() { // LED stays on
   unsigned long start_time = millis();
 
 //  if(DEBUG) Serial.println("starting data frame");
-  
-  sensors_event_t event; 
+
+  sensors_event_t event;
   accel.getEvent(&event);
   float accel_x = event.acceleration.x; // ms^-2
   float accel_y = event.acceleration.y; // ms^-2
@@ -165,7 +165,7 @@ void takeData() { // LED stays on
 //    Serial.print("done getting accel data at: ");
 //    Serial.println(millis() - start_time);
 //  }
-  
+
   float temperature = baro.getTemperature(); // deg C
 //  if(DEBUG) {
 //    Serial.print("done getting temperature at: ");
@@ -177,7 +177,7 @@ void takeData() { // LED stays on
 //    Serial.print("done getting pressure at: ");
 //    Serial.println(millis() - start_time);
 //  }
-  
+
 //  float altitude = baro.getAltitude(); // m
 //  float altitude = 44330.0 * (1.0 - pow(pressure / PRESSURE_SEA_LEVEL, 0.1903));
 //  if(DEBUG) {
@@ -198,7 +198,7 @@ void takeData() { // LED stays on
     Serial.print("finished data frame after: ");
     Serial.println(elapsed_time);
   }
-  
+
   if(elapsed_time < 50) {
     unsigned long remaining_time = 50 - elapsed_time;
     if(DEBUG) {
