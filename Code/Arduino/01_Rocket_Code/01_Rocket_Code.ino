@@ -2,7 +2,7 @@
 #include <Adafruit_Sensor.h>
 #include <Adafruit_FRAM_I2C.h>
 #include <Adafruit_MMA8451.h>
-#include <Adafruit_MPL3115A2_Modified.h>
+#include <Adafruit_MPL3115A2.h>
 
 #define DEBUG false
 
@@ -221,8 +221,8 @@ void writeFloat(float x) {
 
   f.number = x;
   for(uint8_t i = 0; i < 4; i++) {
-    fram.write8(addr, f.bytes[3 - i]);
-    
+    fram.write(addr, f.bytes[3 - i]);
+
     addr++;
     if(addr == MAX_ADDR) {
       if(DEBUG) Serial.println("finished data collection!");
