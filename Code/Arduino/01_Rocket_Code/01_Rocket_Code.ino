@@ -1,35 +1,34 @@
 #include <Wire.h>
-#include <Adafruit_Sensor.h>
-#include <Adafruit_FRAM_I2C.h>
 #include <Adafruit_MMA8451.h>
+#include <Adafruit_FRAM_I2C.h>
 #include <Adafruit_MPL3115A2.h>
 
 bool const DEBUG = false;
 int const COUNTDOWN_MINUTES = DEBUG ? 0 : 2;
 
-int const BUTTON = 8;
-int const LED = 9;
+byte const BUTTON = 8;
+byte const LED = 9;
 
-int const MAX_ADDR = 32768;
+size_t const MAX_ADDR = 32768;
 float const PRESSURE_SEA_LEVEL = 101325.0;
 
-Adafruit_FRAM_I2C const fram {};
-Adafruit_MMA8451 const accel {};
-Adafruit_MPL3115A2 const baro {};
+Adafruit_FRAM_I2C fram {};
+Adafruit_MMA8451 accel {};
+Adafruit_MPL3115A2 baro {};
 
-uint16_t addr = 0;
+// uint16_t addr = 0;
 
-uint8_t brightness = 0;
+int brightness = 0;
 bool brightness_inc = true;
 
-const uint8_t countdown_time = 50 * COUNTDOWN_MINUTES;
+const int countdown_time = 50 * COUNTDOWN_MINUTES;
 
 void setup() {
     delay(2000);
 
     Serial.begin(250000);
 
-    pinMode(LED, OUTPUT);
+    setLED(true);
     pinMode(BUTTON, INPUT_PULLUP);
 
     while(!(fram.begin() && accel.begin() && baro.begin())) {
@@ -45,7 +44,8 @@ void setup() {
     accel.setRange(MMA8451_RANGE_8_G);
     accel.setDataRate(MMA8451_DATARATE_50_HZ);
 
-    if(DEBUG) Serial.println("good startup");
+    if(DEBUG)
+        Serial.println("good startup");
 }
 
 void loop() {
@@ -54,7 +54,14 @@ void loop() {
     if(Serial.available() > 0) {
         recoverData();
     } else if(getButton()) {
-        buttonHeld();
+        if(readyCollect()) {
+            if(DEBUG)
+                Serial.println("countdown");
+            takeDataCountdown();
+        } else {
+            if(DEBUG)
+                Serial.println("button released too late");
+        }
         if(DEBUG) Serial.println("default state");
     }
 }
@@ -68,7 +75,7 @@ void recoverData() {
 
     digitalWrite(LED, LOW);
 
-    uint8_t value;
+    byte value;
     for (uint16_t a = 0; a < MAX_ADDR; a++) {
         if(a % 64 == 0) {
             Serial.println();
@@ -82,34 +89,28 @@ void recoverData() {
     Serial.println();
 }
 
-void buttonHeld() {
+bool readyCollect() {
     setLED(false);
-    unsigned long start_time = millis();
+
+    auto const start_time = millis();
 
     while(millis() - start_time < 3000) {
         if(!getButton()) {
             if(DEBUG) Serial.println("button released too early");
-            return;
+            return false;
         }
     }
 
     setLED(true);
-    bool begin_data = false;
 
     while(millis() - start_time < 5000) {
         if(!getButton()) {
-            begin_data = true;
-            break;
+            return true;
         }
     }
 
-    if(begin_data) {
-        if(DEBUG) Serial.println("countdown");
-        takeDataCountdown();
-    } else {
-        if(DEBUG) Serial.println("button released too late");
-        waitForButtonRelease();
-    }
+    waitForButtonRelease();
+    return false;
 }
 
 void takeDataCountdown() {
@@ -207,14 +208,12 @@ void takeData() { // LED stays on
 }
 
 void writeFloat(float x) {
-    typedef union
-    {
+    static size_t addr = 0;
+    union {
         float number;
         uint8_t bytes[4];
-    } float_union_t;
-    float_union_t f;
+    } f {x};
 
-    f.number = x;
     for(uint8_t i = 0; i < 4; i++) {
         fram.write(addr, f.bytes[3 - i]);
 
@@ -228,7 +227,7 @@ void writeFloat(float x) {
     }
 }
 
-void pulse(uint8_t d) {
+void pulse(byte d) {
     if(brightness_inc) {
         brightness++;
         if(brightness == 255) {
@@ -257,7 +256,7 @@ void flash(unsigned long d) {
     }
 }
 
-void setLEDAnalog(uint8_t b) {
+void setLEDAnalog(byte b) {
     analogWrite(LED, b);
 }
 
