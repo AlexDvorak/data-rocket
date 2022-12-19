@@ -1,5 +1,5 @@
 #include "Config.h"
-
+#include "status_light.h"
 #include <Wire.h>
 #include <Adafruit_MMA8451.h>
 #include <Adafruit_FRAM_I2C.h>
@@ -16,7 +16,7 @@ void setup() {
 
     Serial.begin(250000);
 
-    setLED(true);
+    led_set(true);
     pinMode(BUTTON, INPUT_PULLUP);
 
     while(!(fram.begin() && accel.begin() && baro.begin())) {
@@ -45,33 +45,32 @@ enum state {
 static enum state rocket_state = IDLE;
 
 void loop() {
-    bool const btn_held = getButton();
-    if (Serial.available() > 0)
-        rocket_state = RECOVER_DATA;
-    
     switch (rocket_state) {
         break; case IDLE:
-            pulse(2);
-            if (btn_held)
-                rocket_state = COUNTDOWN;
+            led_pulse(2);
+            rocket_state = Serial.available() > 0
+                ? RECOVER_DATA
+                : getButton()
+                    ? COUNTDOWN
+                    : IDLE;
 
         break; case COUNTDOWN:
-            rocket_state = countdown_2() // blocking
+            rocket_state = init_countdown()
                 ? COLLECT_DATA
                 : IDLE;
 
         break; case RECOVER_DATA:
-            recoverData(); // blocking
+            offload_data(); // blocking
             rocket_state = IDLE;
 
         break; case COLLECT_DATA:
-            rocket_state = takeData2()
+            rocket_state = take_data()
                 ? COLLECT_DATA
                 : IDLE;
     }
 }
 
-void recoverData() {
+void offload_data() {
     while(Serial.available() > 0) {
         Serial.read();
     }
@@ -94,8 +93,8 @@ void recoverData() {
     Serial.println();
 }
 
-bool readyCollect() {
-    setLED(false);
+bool init_collect() {
+    led_set(false);
 
     auto const start_time = millis();
 
@@ -106,7 +105,7 @@ bool readyCollect() {
         }
     }
 
-    setLED(true);
+    led_set(true);
 
     while(millis() - start_time < 5000) {
         if(!getButton()) {
@@ -118,14 +117,7 @@ bool readyCollect() {
     return false;
 }
 
-void blink(unsigned long t) {
-    setLED(false);
-    delay(t);
-    setLED(true);
-    delay(t);
-}
-
-bool countdown_2() {
+bool init_countdown() {
     for (int i = 0; i < countdown_time; i++) {
         blink(1000 / 2);
         if (getButton()) {
@@ -145,34 +137,7 @@ bool countdown_2() {
     return true;
 }
 
-void takeDataCountdown() {
-    uint8_t i = 0;
-    for(i = 0; i < countdown_time; i++) {
-        blink(1000 / 2);
-
-        if(getButton()) {
-            waitForButtonRelease();
-            return;
-        }
-    }
-
-    for(i = 0; i < countdown_time; i++) {
-        blink(200 / 2);
-
-        if(getButton()) {
-            waitForButtonRelease();
-            return;
-        }
-    }
-
-    if(DEBUG) Serial.println("countdown complete");
-
-    while(true) {
-        takeData();
-    }
-}
-
-bool takeData2() { // LED stays on
+bool take_data() { // LED stays on
     unsigned long start_time = millis();
 
     sensors_event_t event;
@@ -202,64 +167,13 @@ bool takeData2() { // LED stays on
     return complete;
 }
 
-void takeData() { // LED stays on
-    unsigned long start_time = millis();
+bool getButton() {
+    return !digitalRead(BUTTON);
+}
 
-    // if(DEBUG) Serial.println("starting data frame");
-
-    sensors_event_t event;
-    accel.getEvent(&event);
-    float accel_x = event.acceleration.x; // ms^-2
-    float accel_y = event.acceleration.y; // ms^-2
-    float accel_z = event.acceleration.z; // ms^-2
-    float accel = sqrt((accel_x * accel_x) + (accel_y * accel_y) + (accel_z * accel_z));
-    // if(DEBUG) {
-    //     Serial.print("done getting accel data at: ");
-    //     Serial.println(millis() - start_time);
-    // }
-
-    float temperature = baro.getTemperature(); // deg C
-    // if(DEBUG) {
-    //     Serial.print("done getting temperature at: ");
-    //     Serial.println(millis() - start_time);
-    // }
-
-    float pressure = baro.getPressure(); // Pa
-    // if(DEBUG) {
-    //     Serial.print("done getting pressure at: ");
-    //     Serial.println(millis() - start_time);
-    // }
-
-    // float altitude = baro.getAltitude(); // m
-    // float altitude = 44330.0 * (1.0 - pow(pressure / PRESSURE_SEA_LEVEL, 0.1903));
-    // if(DEBUG) {
-    //     Serial.print("done getting altitude at: ");
-    //     Serial.println(millis() - start_time);
-    // }
-
-    writeFloat(accel);
-    writeFloat(temperature);
-    writeFloat(pressure);
-    // if(DEBUG) {
-    //     Serial.print("done writing floats at: ");
-    //     Serial.println(millis() - start_time);
-    // }
-
-    unsigned long elapsed_time = millis() - start_time;
-    if(DEBUG) {
-        Serial.print("finished data frame after: ");
-        Serial.println(elapsed_time);
-    }
-
-    if(elapsed_time < 50) {
-        unsigned long remaining_time = 50 - elapsed_time;
-        if(DEBUG) {
-            Serial.print("waiting: ");
-            Serial.println(remaining_time);
-        }
-        if(remaining_time > 0) {
-            delay(remaining_time);
-        }
+void waitForButtonRelease() {
+    while(getButton()) {
+        led_pulse(8); // T = 4
     }
 }
 
@@ -280,57 +194,4 @@ bool writeFloat(float x) {
     }
 
     return true;
-}
-
-void pulse(unsigned long ms) {
-    static bool brightness_inc = true;
-    static uint8_t brightness = 0;
-    if(brightness_inc) {
-        brightness++;
-        if(brightness == 255) {
-            brightness_inc = false;
-        }
-    } else {
-        brightness--;
-        if(brightness == 0) {
-            brightness_inc = true;
-        }
-    }
-    //  if(DEBUG) {
-    //    Serial.print("brightness: ");
-    //    Serial.println(brightness);
-    //  }
-    setLEDAnalog(brightness);
-    delay(ms);
-}
-
-void flash(unsigned long d) {
-    while(true) {
-        setLED(false);
-        delay(d);
-        setLED(true);
-        delay(d);
-    }
-}
-
-void setLEDAnalog(byte b) {
-    analogWrite(LED, b);
-}
-
-void setLED(bool on) {
-    if(DEBUG) {
-        Serial.print("LED: ");
-        Serial.println(on);
-    }
-    digitalWrite(LED, on);
-}
-
-bool getButton() {
-    return !digitalRead(BUTTON);
-}
-
-void waitForButtonRelease() {
-    while(getButton()) {
-        pulse(8); // T = 4
-    }
 }
