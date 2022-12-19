@@ -1,27 +1,15 @@
+#include "Config.h"
+
 #include <Wire.h>
 #include <Adafruit_MMA8451.h>
 #include <Adafruit_FRAM_I2C.h>
 #include <Adafruit_MPL3115A2.h>
 
-bool const DEBUG = false;
-int const COUNTDOWN_MINUTES = DEBUG ? 0 : 2;
-
-byte const BUTTON = 8;
-byte const LED = 9;
-
-size_t const MAX_ADDR = 32768;
-float const PRESSURE_SEA_LEVEL = 101325.0;
 
 Adafruit_FRAM_I2C fram {};
 Adafruit_MMA8451 accel {};
 Adafruit_MPL3115A2 baro {};
 
-// uint16_t addr = 0;
-
-int brightness = 0;
-bool brightness_inc = true;
-
-const int countdown_time = 50 * COUNTDOWN_MINUTES;
 
 void setup() {
     delay(2000);
@@ -48,21 +36,38 @@ void setup() {
         Serial.println("good startup");
 }
 
-void loop() {
-    pulse(8); // T = 4
+enum state {
+    IDLE,
+    COUNTDOWN,
+    COLLECT_DATA,
+    RECOVER_DATA,
+};
+static enum state rocket_state = IDLE;
 
-    if(Serial.available() > 0) {
-        recoverData();
-    } else if(getButton()) {
-        if(readyCollect()) {
-            if(DEBUG)
-                Serial.println("countdown");
-            takeDataCountdown();
-        } else {
-            if(DEBUG)
-                Serial.println("button released too late");
-        }
-        if(DEBUG) Serial.println("default state");
+void loop() {
+    bool const btn_held = getButton();
+    if (Serial.available() > 0)
+        rocket_state = RECOVER_DATA;
+    
+    switch (rocket_state) {
+        break; case IDLE:
+            pulse(2);
+            if (btn_held)
+                rocket_state = COUNTDOWN;
+
+        break; case COUNTDOWN:
+            rocket_state = countdown_2() // blocking
+                ? COLLECT_DATA
+                : IDLE;
+
+        break; case RECOVER_DATA:
+            recoverData(); // blocking
+            rocket_state = IDLE;
+
+        break; case COLLECT_DATA:
+            rocket_state = takeData2()
+                ? COLLECT_DATA
+                : IDLE;
     }
 }
 
@@ -76,7 +81,7 @@ void recoverData() {
     digitalWrite(LED, LOW);
 
     byte value;
-    for (uint16_t a = 0; a < MAX_ADDR; a++) {
+    for (uint16_t a = 0; a < MAX_FRAM_ADDR; a++) {
         if(a % 64 == 0) {
             Serial.println();
         }
@@ -113,13 +118,37 @@ bool readyCollect() {
     return false;
 }
 
+void blink(unsigned long t) {
+    setLED(false);
+    delay(t);
+    setLED(true);
+    delay(t);
+}
+
+bool countdown_2() {
+    for (int i = 0; i < countdown_time; i++) {
+        blink(1000 / 2);
+        if (getButton()) {
+            waitForButtonRelease();
+            return false;
+        }
+    }
+    
+    for (int i = 0; i < countdown_time; i++) {
+        blink(200 / 2);
+        if (getButton()) {
+            waitForButtonRelease();
+            return false;
+        }
+    }
+
+    return true;
+}
+
 void takeDataCountdown() {
     uint8_t i = 0;
     for(i = 0; i < countdown_time; i++) {
-        setLED(false);
-        delay(500);
-        setLED(true);
-        delay(500);
+        blink(1000 / 2);
 
         if(getButton()) {
             waitForButtonRelease();
@@ -128,10 +157,7 @@ void takeDataCountdown() {
     }
 
     for(i = 0; i < countdown_time; i++) {
-        setLED(false);
-        delay(100);
-        setLED(true);
-        delay(100);
+        blink(200 / 2);
 
         if(getButton()) {
             waitForButtonRelease();
@@ -144,6 +170,36 @@ void takeDataCountdown() {
     while(true) {
         takeData();
     }
+}
+
+bool takeData2() { // LED stays on
+    unsigned long start_time = millis();
+
+    sensors_event_t event;
+    accel.getEvent(&event);
+    float accel_x = event.acceleration.x; // ms^-2
+    float accel_y = event.acceleration.y; // ms^-2
+    float accel_z = event.acceleration.z; // ms^-2
+    float accel = sqrt((accel_x * accel_x) + (accel_y * accel_y) + (accel_z * accel_z));
+
+    float temperature = baro.getTemperature(); // deg C
+
+    float pressure = baro.getPressure(); // Pa
+
+    bool const complete = writeFloat(accel)
+        && writeFloat(temperature)
+        && writeFloat(pressure);
+
+    unsigned long elapsed_time = millis() - start_time;
+
+    if(elapsed_time < 50) {
+        unsigned long remaining_time = 50 - elapsed_time;
+        if(remaining_time > 0) {
+            delay(remaining_time);
+        }
+    }
+
+    return complete;
 }
 
 void takeData() { // LED stays on
@@ -207,7 +263,7 @@ void takeData() { // LED stays on
     }
 }
 
-void writeFloat(float x) {
+bool writeFloat(float x) {
     static size_t addr = 0;
     union {
         float number;
@@ -218,16 +274,17 @@ void writeFloat(float x) {
         fram.write(addr, f.bytes[3 - i]);
 
         addr++;
-        if(addr == MAX_ADDR) {
-            if(DEBUG) Serial.println("finished data collection!");
-            while(true) {
-                pulse(2); // T = 1
-            }
+        if(addr == MAX_FRAM_ADDR) {
+            return false;
         }
     }
+
+    return true;
 }
 
-void pulse(byte d) {
+void pulse(unsigned long ms) {
+    static bool brightness_inc = true;
+    static uint8_t brightness = 0;
     if(brightness_inc) {
         brightness++;
         if(brightness == 255) {
@@ -244,7 +301,7 @@ void pulse(byte d) {
     //    Serial.println(brightness);
     //  }
     setLEDAnalog(brightness);
-    delay(d);
+    delay(ms);
 }
 
 void flash(unsigned long d) {
