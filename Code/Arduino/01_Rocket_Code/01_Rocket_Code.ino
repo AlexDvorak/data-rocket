@@ -1,5 +1,7 @@
 #include "Config.h"
 #include "status_light.h"
+#include "periphs.h"
+
 #include <Wire.h>
 #include <Adafruit_MMA8451.h>
 #include <Adafruit_FRAM_I2C.h>
@@ -125,7 +127,7 @@ bool init_countdown() {
             return false;
         }
     }
-    
+
     for (int i = 0; i < countdown_time; i++) {
         blink(200 / 2);
         if (getButton()) {
@@ -151,9 +153,7 @@ bool take_data() { // LED stays on
 
     float pressure = baro.getPressure(); // Pa
 
-    bool const complete = writeFloat(accel)
-        && writeFloat(temperature)
-        && writeFloat(pressure);
+    bool const complete = writeTriple(accel, temperature, pressure);
 
     unsigned long elapsed_time = millis() - start_time;
 
@@ -165,33 +165,4 @@ bool take_data() { // LED stays on
     }
 
     return complete;
-}
-
-bool getButton() {
-    return !digitalRead(BUTTON);
-}
-
-void waitForButtonRelease() {
-    while(getButton()) {
-        led_pulse(8); // T = 4
-    }
-}
-
-bool writeFloat(float x) {
-    static size_t addr = 0;
-    union {
-        float number;
-        uint8_t bytes[4];
-    } f {x};
-
-    for(uint8_t i = 0; i < 4; i++) {
-        fram.write(addr, f.bytes[3 - i]);
-
-        addr++;
-        if(addr == MAX_FRAM_ADDR) {
-            return false;
-        }
-    }
-
-    return true;
 }
