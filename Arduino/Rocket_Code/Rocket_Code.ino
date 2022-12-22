@@ -73,15 +73,15 @@ bool released_before(unsigned long timeout) {
 
 bool init_launch_seq(void) {
     led_set(false);
-    if (released_before(3000))
-        return false;
+
+    if (released_before(3000)) return false;
 
     led_set(true);
-    if (released_before(5000))
-        return true;
 
-    wait_for_button_release();
-    return false;
+    if (released_before(2000)) return true;
+    else
+        wait_for_button_release();
+        return false;
 }
 
 Directive countdown(void) {
@@ -137,12 +137,12 @@ void offload_data(void) {
     while(Serial.available() > 0)
         Serial.read();
 
-    digitalWrite(LED, LOW);
+    led_set(false);
 
     for (size_t a = 0; a < MAX_FRAM_ADDR; a++) {
         if(a % 64 == 0) Serial.println();
 
-        byte value = fram.read(a);
+        uint8_t value = fram.read(a);
         Serial.print(value, HEX);
         Serial.print(" ");
     }
