@@ -84,7 +84,6 @@ bool countdown() {
     return true;
 }
 
-
 bool collect_data() {
     return dummy_write(0.0);
 }
