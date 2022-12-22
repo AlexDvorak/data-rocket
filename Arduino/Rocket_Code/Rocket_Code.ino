@@ -40,7 +40,7 @@ void loop() {
     switch (rocket_state) {
         break; case IDLE:
             led_pulse(2);
-            if (buttonPressed())
+            if (button_pressed())
                 rocket_state = COUNTDOWN;
             else if (Serial)
                 rocket_state = RECOVER_DATA;
@@ -66,7 +66,7 @@ void loop() {
 bool released_before(unsigned long timeout) {
     auto const start = millis();
     while (millis() - start < timeout) {
-        if (buttonReleased()) return true;
+        if (button_released()) return true;
     }
     return false;
 }
@@ -80,23 +80,23 @@ bool init_launch_seq(void) {
     if (released_before(5000))
         return true;
 
-    waitForButtonRelease();
+    wait_for_button_release();
     return false;
 }
 
 Directive countdown(void) {
     for (int i = 0; i < countdown_time; i++) {
         blink(1000);
-        if (buttonPressed()) {
-            waitForButtonRelease();
+        if (button_pressed()) {
+            wait_for_button_release();
             return ABORT;
         }
     }
 
     for (int i = 0; i < countdown_time; i++) {
         blink(200);
-        if (buttonPressed()) {
-            waitForButtonRelease();
+        if (button_pressed()) {
+            wait_for_button_release();
             return ABORT;
         }
     }
@@ -130,7 +130,7 @@ bool collect_data(void) {
     float const temperature = baro.getTemperature(); // deg C
     float const pressure = baro.getPressure(); // Pa
 
-    return writeTriple(accel, temperature, pressure);
+    return write_triple(accel, temperature, pressure);
 }
 
 void offload_data(void) {

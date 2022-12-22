@@ -9,22 +9,22 @@ extern Adafruit_MMA8451 accel;
 extern Adafruit_FRAM_I2C fram;
 extern Adafruit_MPL3115A2 baro;
 
-bool buttonPressed() {
+bool button_pressed() {
     return !digitalRead(BUTTON);
 }
 
-bool buttonReleased() {
+bool button_released() {
     return digitalRead(BUTTON);
 }
 
-void waitForButtonRelease() {
-    while(buttonPressed()) {
+void wait_for_button_release() {
+    while(button_pressed()) {
         led_pulse(8); // T = 4
     }
 }
 
 static size_t addr = 0;
-bool writeint(int16_t a) {
+bool write_int(int16_t a) {
     if (addr + 2 >= MAX_FRAM_ADDR)
         return false;
 
@@ -43,11 +43,11 @@ bool writeint(int16_t a) {
     return true;
 }
 
-bool writeTriple(int16_t a, float b, float c) {
-    return writeint(a) && writeFloat(b) && writeFloat(c);
+bool write_triple(int16_t a, float b, float c) {
+    return write_int(a) && write_float(b) && write_float(c);
 }
 
-bool writeFloat(float x) {
+bool write_float(float x) {
 
     if (addr + 4 >= MAX_FRAM_ADDR)
         return false;
