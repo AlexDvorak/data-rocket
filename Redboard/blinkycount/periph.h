@@ -35,7 +35,7 @@ bool buttonPressed() {
 bool buttonReleased() {
   return !getButton();
 };
-bool waitForButtonRelease() {
+void waitForButtonRelease() {
   while (buttonPressed())
     ledPulse(8);
 }
