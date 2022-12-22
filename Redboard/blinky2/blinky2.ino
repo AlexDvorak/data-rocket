@@ -1,5 +1,6 @@
 #include "config.h"
 #include "periph.h"
+#include "recover.h"
 
 enum RocketState {
     IDLE,
@@ -11,14 +12,18 @@ enum RocketState {
 } rocket_state = IDLE;
 
 void setup() {
+    pinMode(BUTTON_PIN, INPUT_PULLUP);
 
+    delay(2000);
+    Serial.begin(250000);
+    led_set(true);
 }
 
 void loop() {
     switch (rocket_state) {
         break; case IDLE:
             led_pulse(8);
-            if (Serial.available() > 0)
+            if (Serial)
                 rocket_state = RECOVER;
             if (button_pressed())
                 rocket_state = INIT_COUNTDOWN;
@@ -79,6 +84,7 @@ bool countdown() {
     return true;
 }
 
-bool collect_data() {}
 
-void recover_data() {}
+bool collect_data() {
+    return dummy_write(0.0);
+}
