@@ -9,13 +9,16 @@ extern Adafruit_MMA8451 accel;
 extern Adafruit_FRAM_I2C fram;
 extern Adafruit_MPL3115A2 baro;
 
-
-bool getButton() {
+bool buttonPressed() {
     return !digitalRead(BUTTON);
 }
 
+bool buttonReleased() {
+    return digitalRead(BUTTON);
+}
+
 void waitForButtonRelease() {
-    while(getButton()) {
+    while(buttonPressed()) {
         led_pulse(8); // T = 4
     }
 }

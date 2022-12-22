@@ -1,11 +1,10 @@
-#include "Config.h"
-#include "status_light.h"
-#include "periphs.h"
-
 #include <Wire.h>
 #include <Adafruit_MMA8451.h>
 #include <Adafruit_FRAM_I2C.h>
 #include <Adafruit_MPL3115A2.h>
+#include "Config.h"
+#include "status_light.h"
+#include "periphs.h"
 
 auto accel = Adafruit_MMA8451();
 auto fram = Adafruit_FRAM_I2C();
@@ -41,7 +40,7 @@ void loop() {
     switch (rocket_state) {
         break; case IDLE:
             led_pulse(2);
-            if (getButton())
+            if (buttonPressed())
                 rocket_state = COUNTDOWN;
             else if (Serial)
                 rocket_state = RECOVER_DATA;
@@ -64,18 +63,22 @@ void loop() {
     }
 }
 
-bool init_launch_seq(void) {
-    auto const start_time = millis();
-
-    led_set(false);
-    while(millis() - start_time < 3000) {
-        if(!getButton()) return false;
+bool released_before(unsigned long timeout) {
+    auto const start = millis();
+    while (millis() - start < timeout) {
+        if (buttonReleased()) return true;
     }
+    return false;
+}
+
+bool init_launch_seq(void) {
+    led_set(false);
+    if (released_before(3000))
+        return false;
 
     led_set(true);
-    while(millis() - start_time < 5000) {
-        if(!getButton()) return true;
-    }
+    if (released_before(5000))
+        return true;
 
     waitForButtonRelease();
     return false;
@@ -84,7 +87,7 @@ bool init_launch_seq(void) {
 Directive countdown(void) {
     for (int i = 0; i < countdown_time; i++) {
         blink(1000);
-        if (getButton()) {
+        if (buttonPressed()) {
             waitForButtonRelease();
             return ABORT;
         }
@@ -92,7 +95,7 @@ Directive countdown(void) {
 
     for (int i = 0; i < countdown_time; i++) {
         blink(200);
-        if (getButton()) {
+        if (buttonPressed()) {
             waitForButtonRelease();
             return ABORT;
         }
