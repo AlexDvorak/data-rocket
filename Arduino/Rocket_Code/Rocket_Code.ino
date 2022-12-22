@@ -7,22 +7,18 @@
 #include <Adafruit_FRAM_I2C.h>
 #include <Adafruit_MPL3115A2.h>
 
-
-Adafruit_FRAM_I2C fram {};
-Adafruit_MMA8451 accel {};
-Adafruit_MPL3115A2 baro {};
-
+auto accel = Adafruit_MMA8451();
+auto fram = Adafruit_FRAM_I2C();
+auto baro = Adafruit_MPL3115A2();
 
 static enum state rocket_state = IDLE;
-const enum mma8451_range_t ACCEL_RANGE = MMA8451_RANGE_8_G;
 
 void setup() {
-    delay(2000);
-
-    Serial.begin(250000);
-
-    led_set(true);
     pinMode(BUTTON, INPUT_PULLUP);
+
+    delay(2000);
+    Serial.begin(250000);
+    led_set(true);
 
     while(!(fram.begin() && accel.begin() && baro.begin())) {
         delay(5000);
@@ -108,7 +104,7 @@ Directive countdown(void) {
 bool collect(unsigned long period) {
     auto start_time = millis();
 
-    collect_data();
+    bool const s = collect_data();
 
     auto elapsed = millis() - start_time;
     if (elapsed < period) {
@@ -117,17 +113,10 @@ bool collect(unsigned long period) {
             delay(remaining);
         }
     }
+    return s;
 }
 
 bool collect_data(void) {
-    static const int16_t divisor = ACCEL_RANGE == MMA8451_RANGE_2_G
-        ? 4096
-        : ACCEL_RANGE == MMA8451_RANGE_4_G
-            ? 2048
-            : ACCEL_RANGE == MMA8451_RANGE_8_G
-                ? 1024
-                : 1;
-
     accel.read();
     int16_t const ax = accel.x;
     int16_t const ay = accel.y;
