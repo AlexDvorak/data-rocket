@@ -15,7 +15,7 @@ void setup() {
     pinMode(BUTTON_PIN, INPUT_PULLUP);
 
     delay(2000);
-    Serial.begin(250000);
+    Serial.begin(9600);
     led_set(true);
 }
 
@@ -23,7 +23,7 @@ void loop() {
     switch (rocket_state) {
         break; case IDLE:
             led_pulse(8);
-            if (Serial)
+            if (Serial.available() > 0)
                 rocket_state = RECOVER;
             if (button_pressed())
                 rocket_state = INIT_COUNTDOWN;
@@ -43,7 +43,7 @@ void loop() {
                 rocket_state = HALT;
 
         break; case HALT:
-            led_pulse(8);
+            led_pulse(4);
 
         break; case RECOVER:
             recover_data();
@@ -59,9 +59,10 @@ bool init_countdown() {
     led_set(true);
 
     if (released_before(2000)) return true;
-    else
+    else {
         wait_until_released();
         return false;
+    }
 }
 
 bool countdown() {

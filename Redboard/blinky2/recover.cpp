@@ -14,7 +14,7 @@ bool fram_init() {
 
 bool dummy_write(float f) {
     (void) f;
-    return ++addr_index > MAX_FRAM_ADDR;
+    return ++addr_index < MAX_FRAM_ADDR;
 }
 
 bool write_float(float f) {
@@ -36,15 +36,15 @@ bool write_float(float f) {
 }
 
 void recover_data() {
-    while (Serial.read() != -1)
-        ;
+    while (Serial.available() > 0)
+        Serial.readStringUntil('\n');
 
     led_set(false);
 
     for (size_t addr = 0; addr < MAX_FRAM_ADDR; addr++) {
-        if (addr % 64 == 0) {
+        if (DEBUG && addr % 64 == 0) {
             Serial.print("Block #");
-            Serial.println(addr / 64);
+            Serial.println((addr / 64) + 1);
         }
 
         // uint8_t value = fram.read(addr);
