@@ -3,10 +3,11 @@
 #include <stdint.h>
 #include "recover.h"
 #include "periph.h"
+#include "config.h"
 
-static size_t const MAX_FRAM_ADDR = 1 << 15;
 static auto fram = Adafruit_FRAM_I2C();
 static size_t addr_index = 0;
+static size_t const MAX_FRAM_ADDR = 1 << 15;
 
 bool fram_init() {
     return fram.begin();

@@ -58,8 +58,9 @@ bool init_countdown() {
 
     led_set(true);
 
-    if (released_before(2000)) return true;
-    else {
+    if (released_before(2000)) {
+        return true;
+    } else {
         wait_until_released();
         return false;
     }
@@ -74,8 +75,8 @@ bool countdown() {
         }
     }
 
-    for (int i = 0; i < COUNTDOWN_STAGE_ONE; i++) {
-        led_blink(1000);
+    for (int i = 0; i < COUNTDOWN_STAGE_ONE * 5; i++) {
+        led_blink(200);
         if (button_pressed()) {
             wait_until_released();
             return false;
