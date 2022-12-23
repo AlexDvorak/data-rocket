@@ -18,6 +18,9 @@ bool dummy_write(float f) {
 }
 
 bool write_float(float f) {
+    if (addr_index + 4 > MAX_FRAM_ADDR)
+        return false;
+
     union {
         float num;
         uint8_t arr[4];
@@ -28,6 +31,8 @@ bool write_float(float f) {
         fram.write(addr_index, s.arr[i]);
         addr_index++;
     }
+
+    return true;
 }
 
 void recover_data() {
