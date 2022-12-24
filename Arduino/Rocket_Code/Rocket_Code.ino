@@ -125,12 +125,11 @@ bool collect_data(void) {
     int16_t const ay = accel.y;
     int16_t const az = accel.z;
 
-    int16_t const accel = (ax*ax) + (ay*ay) + (az*az);
-
-    float const temperature = baro.getTemperature(); // deg C
-    float const pressure = baro.getPressure(); // Pa
-
-    return write_triple(accel, temperature, pressure);
+    return write_rocketlog({
+        .accel = (ax*ax) + (ay*ay) + (az*az),
+        .temp = baro.getTemperature(),
+        .press = baro.getPressure(),
+    });
 }
 
 void offload_data(void) {
