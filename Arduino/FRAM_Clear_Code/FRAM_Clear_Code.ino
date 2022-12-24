@@ -1,13 +1,11 @@
-#include <Wire.h>
 #include <Adafruit_FRAM_I2C.h>
 
-#define N 32768
+size_t const N = 1 << 15;
 
-Adafruit_FRAM_I2C fram = Adafruit_FRAM_I2C();
+auto fram = Adafruit_FRAM_I2C();
 
 void setup() {
   uint16_t addr = 0;
-  uint8_t x = 0;
 
   Serial.begin(250000);
 
@@ -15,11 +13,11 @@ void setup() {
     Serial.println("FRAM issue!");
     return;
   }
-  
+
   Serial.println("clearing...");
 
   for(addr = 0; addr < N; addr++) {
-    fram.write8(addr, 0);
+    fram.write(addr, 0);
   }
 
   Serial.println("cleared!");
